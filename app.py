@@ -35,7 +35,7 @@ def clear_cache():
     st.cache_resource.clear()
 
 def main():
-    st.title("Pulsar Apps Assisstant")
+    st.title("Pulsar Apps Assistant")
     st.write(css, unsafe_allow_html=True)
     
     if "db_conn" not in st.session_state:
