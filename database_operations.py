@@ -1,6 +1,9 @@
 from utils import load_config
 import streamlit as st
 import sqlite3
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 config = load_config()
 
 def get_db_connection():
