@@ -8,6 +8,10 @@ from pdf_handler import add_documents_to_db
 from html_templates import css
 from database_operations import load_last_k_text_messages, save_text_message, save_image_message, save_audio_message, load_messages, get_all_chat_history_ids, delete_chat_history
 import sqlite3
+
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 config = load_config()
 
 @st.cache_resource
