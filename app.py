@@ -1,4 +1,6 @@
 import streamlit as st
+import boto3
+import os
 from llm_chains import load_normal_chain, load_pdf_chat_chain
 from streamlit_mic_recorder import mic_recorder
 from utils import get_timestamp, load_config, get_avatar
@@ -13,6 +15,44 @@ __import__('pysqlite3')
 import sys
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 config = load_config()
+
+# Initialize a session using DigitalOcean Spaces.
+session = boto3.session.Session()
+client = session.client('s3',
+                        region_name=st.secrets["spaces"]["region"],
+                        endpoint_url=f'https://{st.secrets["spaces"]["region"]}.digitaloceanspaces.com',
+                        aws_access_key_id=st.secrets["spaces"]["access_key"],
+                        aws_secret_access_key=st.secrets["spaces"]["secret_key"])
+
+# Define the local path where the models will be stored
+local_model_path = './models/'
+
+# Create the directory if it doesn't exist
+if not os.path.exists(local_model_path):
+    os.makedirs(local_model_path)
+
+# List of models to download with their corresponding keys in DigitalOcean Spaces
+models = {
+    "mistral-7b-instruct-v0.1.Q3_K_M.gguf": "path/to/mistral-7b-instruct-v0.1.Q3_K_M.gguf",
+    "mistral-7b-instruct-v0.1.Q5_K_M.gguf": "path/to/mistral-7b-instruct-v0.1.Q5_K_M.gguf",
+    "llava/llava_ggml-model-q5_k.gguf": "path/to/llava/llava_ggml-model-q5_k.gguf",
+    "llava/mmproj-model-f16.gguf": "path/to/llava/mmproj-model-f16.gguf"
+}
+
+# Function to download a model if it does not exist locally
+def download_model(local_path, s3_key):
+    if not os.path.exists(local_path):
+        client.download_file(st.secrets["spaces"]["bucket_name"], s3_key, local_path)
+        st.write(f"Downloaded {os.path.basename(local_path)} successfully.")
+    else:
+        st.write(f"{os.path.basename(local_path)} already exists locally.")
+
+# Download each model
+for local_model, s3_key in models.items():
+    local_path = os.path.join(local_model_path, local_model)
+    download_model(local_path, s3_key)
+
+# The rest of your code remains unchanged
 
 @st.cache_resource
 def load_chain():
