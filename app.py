@@ -33,10 +33,10 @@ if not os.path.exists(local_model_path):
 
 # List of models to download with their corresponding keys in DigitalOcean Spaces
 models = {
-    "mistral-7b-instruct-v0.1.Q3_K_M.gguf": "path/to/mistral-7b-instruct-v0.1.Q3_K_M.gguf",
-    "mistral-7b-instruct-v0.1.Q5_K_M.gguf": "path/to/mistral-7b-instruct-v0.1.Q5_K_M.gguf",
-    "llava/llava_ggml-model-q5_k.gguf": "path/to/llava/llava_ggml-model-q5_k.gguf",
-    "llava/mmproj-model-f16.gguf": "path/to/llava/mmproj-model-f16.gguf"
+        "mistral-7b-instruct-v0.1.Q3_K_M.gguf": "mistral-7b-instruct-v0.1.Q3_K_M.gguf",
+        "mistral-7b-instruct-v0.1.Q5_K_M.gguf": "mistral-7b-instruct-v0.1.Q5_K_M.gguf"
+
+    
 }
 
 # Function to download a model if it does not exist locally
