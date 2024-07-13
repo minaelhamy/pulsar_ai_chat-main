@@ -10,6 +10,7 @@ from pdf_handler import add_documents_to_db
 from html_templates import css
 from database_operations import load_last_k_text_messages, save_text_message, save_image_message, save_audio_message, load_messages, get_all_chat_history_ids, delete_chat_history
 import sqlite3
+import logging
 
 __import__('pysqlite3')
 import sys
@@ -23,6 +24,9 @@ client = session.client('s3',
                         endpoint_url=f'https://{st.secrets["spaces"]["region"]}.digitaloceanspaces.com',
                         aws_access_key_id=st.secrets["spaces"]["access_key"],
                         aws_secret_access_key=st.secrets["spaces"]["secret_key"])
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Define the local path where the models will be stored
 local_model_path = './models/'
@@ -43,9 +47,9 @@ models = {
 def download_model(local_path, s3_key):
     if not os.path.exists(local_path):
         client.download_file(st.secrets["spaces"]["bucket_name"], s3_key, local_path)
-        st.write(f"Downloaded {os.path.basename(local_path)} successfully.")
+        logger.info(f"Downloaded {os.path.basename(local_path)} successfully.")
     else:
-        st.write(f"{os.path.basename(local_path)} already exists locally.")
+        logger.info(f"{os.path.basename(local_path)} already exists locally.")
 
 # Download each model
 for local_model, s3_key in models.items():
