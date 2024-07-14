@@ -8,7 +8,7 @@ import sqlite3
 import pandas as pd
 from sqlalchemy import create_engine
 import pymongo
-#import shopify
+import shopify
 import simple_salesforce
 
 __import__('pysqlite3')
@@ -49,10 +49,10 @@ def connect_mongo_db(connection_string):
     client = pymongo.MongoClient(connection_string)
     return client
 
-#def connect_shopify(api_key, password, store_name):
- #   shop_url = f"https://{api_key}:{password}@{store_name}.myshopify.com/admin"
-  #  shopify.ShopifyResource.set_site(shop_url)
-   # return shopify
+def connect_shopify(api_key, password, store_name):
+    shop_url = f"https://{api_key}:{password}@{store_name}.myshopify.com/admin"
+    shopify.ShopifyResource.set_site(shop_url)
+    return shopify
 
 def connect_salesforce(username, password, security_token):
     sf = simple_salesforce.Salesforce(username=username, password=password, security_token=security_token)
@@ -77,7 +77,8 @@ def lead_conversation():
     st.session_state.conversation_step = st.session_state.get('conversation_step', 0)
 
     if st.session_state.conversation_step == 0:
-        st.chat_message(name="bot", message="Hello! How are you today?")
+        with st.chat_message("bot"):
+            st.write("Hello! How are you today?")
         st.session_state.conversation_step += 1
         return
 
@@ -85,16 +86,20 @@ def lead_conversation():
 
     if st.session_state.conversation_step == 1:
         if user_input:
-            st.chat_message(name="user", message=user_input)
-            st.chat_message(name="bot", message="Great! What's the name of your company?")
+            with st.chat_message("user"):
+                st.write(user_input)
+            with st.chat_message("bot"):
+                st.write("Great! What's the name of your company?")
             st.session_state.conversation_step += 1
             st.session_state.user_input = ""
         return
 
     if st.session_state.conversation_step == 2:
         if user_input:
-            st.chat_message(name="user", message=user_input)
-            st.chat_message(name="bot", message="Can you give me a brief about your company and business model?")
+            with st.chat_message("user"):
+                st.write(user_input)
+            with st.chat_message("bot"):
+                st.write("Can you give me a brief about your company and business model?")
             st.session_state.company_name = user_input
             st.session_state.conversation_step += 1
             st.session_state.user_input = ""
@@ -102,8 +107,10 @@ def lead_conversation():
 
     if st.session_state.conversation_step == 3:
         if user_input:
-            st.chat_message(name="user", message=user_input)
-            st.chat_message(name="bot", message="Thank you! What are you looking for today? Better offers, price optimization, or just analytics and recommendations?")
+            with st.chat_message("user"):
+                st.write(user_input)
+            with st.chat_message("bot"):
+                st.write("Thank you! What are you looking for today? Better offers, price optimization, or just analytics and recommendations?")
             st.session_state.company_brief = user_input
             st.session_state.conversation_step += 1
             st.session_state.user_input = ""
@@ -111,15 +118,19 @@ def lead_conversation():
 
     if st.session_state.conversation_step == 4:
         if user_input:
-            st.chat_message(name="user", message=user_input)
+            with st.chat_message("user"):
+                st.write(user_input)
             if "better offers" in user_input.lower():
-                st.chat_message(name="bot", message="Great! Please upload your product data in a CSV file.")
+                with st.chat_message("bot"):
+                    st.write("Great! Please upload your product data in a CSV file.")
                 st.session_state.user_request = "better offers"
             elif "price optimization" in user_input.lower():
-                st.chat_message(name="bot", message="Great! Please upload your product data in a CSV file.")
+                with st.chat_message("bot"):
+                    st.write("Great! Please upload your product data in a CSV file.")
                 st.session_state.user_request = "price optimization"
             elif "analytics" in user_input.lower():
-                st.chat_message(name="bot", message="Great! Please upload your product data in a CSV file.")
+                with st.chat_message("bot"):
+                    st.write("Great! Please upload your product data in a CSV file.")
                 st.session_state.user_request = "analytics"
             st.session_state.conversation_step += 1
             st.session_state.user_input = ""
@@ -130,13 +141,14 @@ def lead_conversation():
         if data is not None:
             if st.session_state.user_request == "analytics":
                 report = analyze_sales(data)
-                st.chat_message(name="bot", message=f"Here is your sales analysis report: {report}")
+                with st.chat_message("bot"):
+                    st.write(f"Here is your sales analysis report: {report}")
             # Additional logic for better offers and price optimization can be added here
         return
 
 def main():
     st.title("Pulsar Apps Assistant")
-    st.write(css, unsafe_allow_html=True)
+    st.markdown(css, unsafe_allow_html=True)
     
     if "db_conn" not in st.session_state:
         st.session_state.session_key = "new_session"
