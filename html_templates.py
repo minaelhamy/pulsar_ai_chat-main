@@ -1,19 +1,29 @@
-css ="""
-    <style>
-        /* User Chat Message */
+# html_templates.py
 
-        .st-emotion-cache-janbn0 {
-            background-color: #2b313e;
-        }
+css = """
+/* Add your CSS styles here */
+body {
+    font-family: 'Arial', sans-serif;
+}
 
-        /* AI Chat Message */
-    
-        .st-emotion-cache-4oy321 {
-            background-color: #475063;
-        }
+.chat-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+}
 
-        section[data-testid="stSidebar"] {
-            width: 380px !important;
-        }
-    </style>
-    """
+.chat-message {
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.chat-message.bot {
+    background-color: #e0e0e0;
+}
+
+.chat-message.user {
+    background-color: #007bff;
+    color: white;
+}
+"""
