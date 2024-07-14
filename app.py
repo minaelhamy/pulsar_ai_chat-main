@@ -1,73 +1,23 @@
 import streamlit as st
-import boto3
-import os
-from llm_chains import load_normal_chain, load_pdf_chat_chain
-from streamlit_mic_recorder import mic_recorder
+from llm_chains import load_normal_chain
 from utils import get_timestamp, load_config, get_avatar
 from image_handler import handle_image
-from audio_handler import transcribe_audio
-from pdf_handler import add_documents_to_db
-from html_templates import css
-from database_operations import load_last_k_text_messages, save_text_message, save_image_message, save_audio_message, load_messages, get_all_chat_history_ids, delete_chat_history
+from database_operations import load_last_k_text_messages, save_text_message, save_image_message, load_messages, get_all_chat_history_ids, delete_chat_history
 import sqlite3
-import logging
+import pandas as pd
+from sqlalchemy import create_engine
+import pymongo
+import shopify
+import simple_salesforce
 
 __import__('pysqlite3')
 import sys
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 config = load_config()
 
-# Initialize a session using DigitalOcean Spaces.
-session = boto3.session.Session()
-client = session.client('s3',
-                        region_name=st.secrets["spaces"]["region"],
-                        endpoint_url=f'https://{st.secrets["spaces"]["region"]}.digitaloceanspaces.com',
-                        aws_access_key_id=st.secrets["spaces"]["access_key"],
-                        aws_secret_access_key=st.secrets["spaces"]["secret_key"])
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Define the local path where the models will be stored
-local_model_path = './models/'
-
-# Create the directory if it doesn't exist
-if not os.path.exists(local_model_path):
-    os.makedirs(local_model_path)
-
-# List of models to download with their corresponding keys in DigitalOcean Spaces
-models = {
-        "mistral-7b-instruct-v0.1.Q3_K_M.gguf": "mistral-7b-instruct-v0.1.Q3_K_M.gguf",
-        "mistral-7b-instruct-v0.1.Q5_K_M.gguf": "mistral-7b-instruct-v0.1.Q5_K_M.gguf"
-
-    
-}
-
-# Function to download a model if it does not exist locally
-def download_model(local_path, s3_key):
-    if not os.path.exists(local_path):
-        client.download_file(st.secrets["spaces"]["bucket_name"], s3_key, local_path)
-        logger.info(f"Downloaded {os.path.basename(local_path)} successfully.")
-    else:
-        logger.info(f"{os.path.basename(local_path)} already exists locally.")
-
-# Download each model
-for local_model, s3_key in models.items():
-    local_path = os.path.join(local_model_path, local_model)
-    download_model(local_path, s3_key)
-
-# The rest of your code remains unchanged
-
 @st.cache_resource
 def load_chain():
-    if st.session_state.pdf_chat:
-        print("loading pdf chat chain")
-        return load_pdf_chat_chain()
     return load_normal_chain()
-
-def toggle_pdf_chat():
-    st.session_state.pdf_chat = True
-    clear_cache()
 
 def get_session_key():
     if st.session_state.session_key == "new_session":
@@ -82,6 +32,107 @@ def delete_chat_session_history():
 def clear_cache():
     st.cache_resource.clear()
 
+def upload_csv():
+    uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
+    if uploaded_file:
+        data = pd.read_csv(uploaded_file)
+        st.write(data)
+        return data
+    return None
+
+def connect_sql_db(connection_string):
+    engine = create_engine(connection_string)
+    return engine
+
+def connect_mongo_db(connection_string):
+    client = pymongo.MongoClient(connection_string)
+    return client
+
+def connect_shopify(api_key, password, store_name):
+    shop_url = f"https://{api_key}:{password}@{store_name}.myshopify.com/admin"
+    shopify.ShopifyResource.set_site(shop_url)
+    return shopify
+
+def connect_salesforce(username, password, security_token):
+    sf = simple_salesforce.Salesforce(username=username, password=password, security_token=security_token)
+    return sf
+
+def analyze_sales(data):
+    most_sold_product = data['Product'].value_counts().idxmax()
+    highest_margin_product = (data['Revenue'] - data['Cost']).idxmax()
+    most_revenue_product = data.groupby('Product')['Revenue'].sum().idxmax()
+    most_profitable_product = (data.groupby('Product')['Revenue'].sum() - data.groupby('Product')['Cost'].sum()).idxmax()
+
+    report = {
+        "most_sold_product": most_sold_product,
+        "highest_margin_product": highest_margin_product,
+        "most_revenue_product": most_revenue_product,
+        "most_profitable_product": most_profitable_product
+    }
+
+    return report
+
+def lead_conversation():
+    st.session_state.conversation_step = st.session_state.get('conversation_step', 0)
+
+    if st.session_state.conversation_step == 0:
+        st.chat_message("bot", "Hello! How are you today?")
+        st.session_state.conversation_step += 1
+        return
+
+    user_input = st.chat_input("Type your message here", key="user_input")
+
+    if st.session_state.conversation_step == 1:
+        if user_input:
+            st.chat_message("user", user_input)
+            st.chat_message("bot", "Great! What's the name of your company?")
+            st.session_state.conversation_step += 1
+            st.session_state.user_input = ""
+        return
+
+    if st.session_state.conversation_step == 2:
+        if user_input:
+            st.chat_message("user", user_input)
+            st.chat_message("bot", "Can you give me a brief about your company and business model?")
+            st.session_state.company_name = user_input
+            st.session_state.conversation_step += 1
+            st.session_state.user_input = ""
+        return
+
+    if st.session_state.conversation_step == 3:
+        if user_input:
+            st.chat_message("user", user_input)
+            st.chat_message("bot", "Thank you! What are you looking for today? Better offers, price optimization, or just analytics and recommendations?")
+            st.session_state.company_brief = user_input
+            st.session_state.conversation_step += 1
+            st.session_state.user_input = ""
+        return
+
+    if st.session_state.conversation_step == 4:
+        if user_input:
+            st.chat_message("user", user_input)
+            if "better offers" in user_input.lower():
+                st.chat_message("bot", "Great! Please upload your product data in a CSV file.")
+                st.session_state.user_request = "better offers"
+            elif "price optimization" in user_input.lower():
+                st.chat_message("bot", "Great! Please upload your product data in a CSV file.")
+                st.session_state.user_request = "price optimization"
+            elif "analytics" in user_input.lower():
+                st.chat_message("bot", "Great! Please upload your product data in a CSV file.")
+                st.session_state.user_request = "analytics"
+            st.session_state.conversation_step += 1
+            st.session_state.user_input = ""
+        return
+
+    if st.session_state.conversation_step == 5:
+        data = upload_csv()
+        if data is not None:
+            if st.session_state.user_request == "analytics":
+                report = analyze_sales(data)
+                st.chat_message("bot", f"Here is your sales analysis report: {report}")
+            # Additional logic for better offers and price optimization can be added here
+        return
+
 def main():
     st.title("Pulsar Apps Assistant")
     st.write(css, unsafe_allow_html=True)
@@ -93,75 +144,19 @@ def main():
         st.session_state.db_conn = sqlite3.connect(config["chat_sessions_database_path"], check_same_thread=False)
         st.session_state.audio_uploader_key = 0
         st.session_state.pdf_uploader_key = 1
-    if st.session_state.session_key == "new_session" and st.session_state.new_session_key != None:
-        st.session_state.session_index_tracker = st.session_state.new_session_key
-        st.session_state.new_session_key = None
+        st.session_state.conversation_step = 0
 
     st.sidebar.title("Chat Sessions")
     chat_sessions = ["new_session"] + get_all_chat_history_ids()
-
     index = chat_sessions.index(st.session_state.session_index_tracker)
     st.sidebar.selectbox("Select a chat session", chat_sessions, key="session_key", index=index)
-    pdf_toggle_col, voice_rec_col = st.sidebar.columns(2)
-    pdf_toggle_col.toggle("PDF Chat", key="pdf_chat", value=False, on_change=clear_cache)
-    with voice_rec_col:
-        voice_recording=mic_recorder(start_prompt="Record Audio",stop_prompt="Stop recording", just_once=True)
     delete_chat_col, clear_cache_col = st.sidebar.columns(2)
     delete_chat_col.button("Delete Chat Session", on_click=delete_chat_session_history)
     clear_cache_col.button("Clear Cache", on_click=clear_cache)
     
     chat_container = st.container()
-    user_input = st.chat_input("Type your message here", key="user_input")
+    lead_conversation()
     
-    
-    uploaded_audio = st.sidebar.file_uploader("Upload an audio file", type=["wav", "mp3", "ogg"], key=st.session_state.audio_uploader_key)
-    uploaded_image = st.sidebar.file_uploader("Upload an image file", type=["jpg", "jpeg", "png"])
-    uploaded_pdf = st.sidebar.file_uploader("Upload a pdf file", accept_multiple_files=True, 
-                                            key=st.session_state.pdf_uploader_key, type=["pdf"], on_change=toggle_pdf_chat)
-
-    if uploaded_pdf:
-        with st.spinner("Processing pdf..."):
-            add_documents_to_db(uploaded_pdf)
-            st.session_state.pdf_uploader_key += 2
-
-    if uploaded_audio:
-        transcribed_audio = transcribe_audio(uploaded_audio.getvalue())
-        print(transcribed_audio)
-        llm_chain = load_chain()
-        llm_answer = llm_chain.run(user_input = "Summarize this text: " + transcribed_audio, chat_history=[])
-        save_audio_message(get_session_key(), "human", uploaded_audio.getvalue())
-        save_text_message(get_session_key(), "ai", llm_answer)
-        st.session_state.audio_uploader_key += 2
-
-    if voice_recording:
-        transcribed_audio = transcribe_audio(voice_recording["bytes"])
-        print(transcribed_audio)
-        llm_chain = load_chain()
-        llm_answer = llm_chain.run(user_input = transcribed_audio, 
-                                   chat_history=load_last_k_text_messages(get_session_key(), config["chat_config"]["chat_memory_length"]))
-        save_audio_message(get_session_key(), "human", voice_recording["bytes"])
-        save_text_message(get_session_key(), "ai", llm_answer)
-
-    
-    if user_input:
-        if uploaded_image:
-            with st.spinner("Processing image..."):
-                llm_answer = handle_image(uploaded_image.getvalue(), user_input)
-                save_text_message(get_session_key(), "human", user_input)
-                save_image_message(get_session_key(), "human", uploaded_image.getvalue())
-                save_text_message(get_session_key(), "ai", llm_answer)
-                user_input = None
-
-
-        if user_input:
-            llm_chain = load_chain()
-            llm_answer = llm_chain.run(user_input = user_input, 
-                                       chat_history=load_last_k_text_messages(get_session_key(), config["chat_config"]["chat_memory_length"]))
-            save_text_message(get_session_key(), "human", user_input)
-            save_text_message(get_session_key(), "ai", llm_answer)
-            user_input = None
-
-
     if (st.session_state.session_key != "new_session") != (st.session_state.new_session_key != None):
         with chat_container:
             chat_history_messages = load_messages(get_session_key())

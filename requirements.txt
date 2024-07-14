@@ -13,3 +13,7 @@ streamlit-mic-recorder==0.0.4
 transformers==4.38.1
 pysqlite3-binary==0.5.3
 boto3==1.34.143
+sqlalchemy==2.0.16
+pymongo==4.2.0
+shopify==9.0.0
+simple-salesforce==1.11.4
