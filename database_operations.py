@@ -112,6 +112,22 @@ def delete_chat_history(chat_history_id):
 
     print(f"All entries with chat_history_id {chat_history_id} have been deleted.")
 
+def save_user(name, company_name, picture, username, password):
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS users
+                 (name TEXT, company_name TEXT, picture BLOB, username TEXT, password TEXT)''')
+    c.execute("INSERT INTO users VALUES (?, ?, ?, ?, ?)", (name, company_name, picture.read(), username, password))
+    conn.commit()
+    conn.close()
+
+def authenticate_user(username, password):
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, password))
+    user = c.fetchone()
+    conn.close()
+    return user
 
 def init_db():
     db_path = config["chat_sessions_database_path"]
