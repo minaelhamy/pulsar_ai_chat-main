@@ -1,7 +1,6 @@
 # html_templates.py
 
 css = """
-/* Add your CSS styles here */
 body {
     font-family: 'Arial', sans-serif;
 }
