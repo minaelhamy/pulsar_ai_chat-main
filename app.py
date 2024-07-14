@@ -7,7 +7,7 @@ import sqlite3
 import pandas as pd
 from sqlalchemy import create_engine
 import pymongo
-import ShopifyAPI 
+#import ShopifyAPI 
 import simple_salesforce
 
 __import__('pysqlite3')
@@ -48,10 +48,10 @@ def connect_mongo_db(connection_string):
     client = pymongo.MongoClient(connection_string)
     return client
 
-def connect_shopify(api_key, password, store_name):
-    shop_url = f"https://{api_key}:{password}@{store_name}.myshopify.com/admin"
-    shopify.ShopifyResource.set_site(shop_url)
-    return shopify
+#def connect_shopify(api_key, password, store_name):
+ #   shop_url = f"https://{api_key}:{password}@{store_name}.myshopify.com/admin"
+  #  shopify.ShopifyResource.set_site(shop_url)
+   # return shopify
 
 def connect_salesforce(username, password, security_token):
     sf = simple_salesforce.Salesforce(username=username, password=password, security_token=security_token)
