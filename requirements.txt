@@ -15,5 +15,5 @@ pysqlite3-binary==0.5.3
 boto3==1.34.143
 sqlalchemy==2.0.16
 pymongo==4.2.0
-shopify==9.0.0
-simple-salesforce==1.11.4
+ShopifyAPI==12.6.0
+simple-salesforce==1.12.6

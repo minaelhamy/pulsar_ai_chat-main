@@ -7,7 +7,7 @@ import sqlite3
 import pandas as pd
 from sqlalchemy import create_engine
 import pymongo
-import shopify
+import ShopifyAPI 
 import simple_salesforce
 
 __import__('pysqlite3')
