@@ -77,7 +77,7 @@ def lead_conversation():
     st.session_state.conversation_step = st.session_state.get('conversation_step', 0)
 
     if st.session_state.conversation_step == 0:
-        st.chat_message("bot", "Hello! How are you today?")
+        st.chat_message(name="bot", message="Hello! How are you today?")
         st.session_state.conversation_step += 1
         return
 
@@ -85,16 +85,16 @@ def lead_conversation():
 
     if st.session_state.conversation_step == 1:
         if user_input:
-            st.chat_message("user", user_input)
-            st.chat_message("bot", "Great! What's the name of your company?")
+            st.chat_message(name="user", message=user_input)
+            st.chat_message(name="bot", message="Great! What's the name of your company?")
             st.session_state.conversation_step += 1
             st.session_state.user_input = ""
         return
 
     if st.session_state.conversation_step == 2:
         if user_input:
-            st.chat_message("user", user_input)
-            st.chat_message("bot", "Can you give me a brief about your company and business model?")
+            st.chat_message(name="user", message=user_input)
+            st.chat_message(name="bot", message="Can you give me a brief about your company and business model?")
             st.session_state.company_name = user_input
             st.session_state.conversation_step += 1
             st.session_state.user_input = ""
@@ -102,8 +102,8 @@ def lead_conversation():
 
     if st.session_state.conversation_step == 3:
         if user_input:
-            st.chat_message("user", user_input)
-            st.chat_message("bot", "Thank you! What are you looking for today? Better offers, price optimization, or just analytics and recommendations?")
+            st.chat_message(name="user", message=user_input)
+            st.chat_message(name="bot", message="Thank you! What are you looking for today? Better offers, price optimization, or just analytics and recommendations?")
             st.session_state.company_brief = user_input
             st.session_state.conversation_step += 1
             st.session_state.user_input = ""
@@ -111,15 +111,15 @@ def lead_conversation():
 
     if st.session_state.conversation_step == 4:
         if user_input:
-            st.chat_message("user", user_input)
+            st.chat_message(name="user", message=user_input)
             if "better offers" in user_input.lower():
-                st.chat_message("bot", "Great! Please upload your product data in a CSV file.")
+                st.chat_message(name="bot", message="Great! Please upload your product data in a CSV file.")
                 st.session_state.user_request = "better offers"
             elif "price optimization" in user_input.lower():
-                st.chat_message("bot", "Great! Please upload your product data in a CSV file.")
+                st.chat_message(name="bot", message="Great! Please upload your product data in a CSV file.")
                 st.session_state.user_request = "price optimization"
             elif "analytics" in user_input.lower():
-                st.chat_message("bot", "Great! Please upload your product data in a CSV file.")
+                st.chat_message(name="bot", message="Great! Please upload your product data in a CSV file.")
                 st.session_state.user_request = "analytics"
             st.session_state.conversation_step += 1
             st.session_state.user_input = ""
@@ -130,7 +130,7 @@ def lead_conversation():
         if data is not None:
             if st.session_state.user_request == "analytics":
                 report = analyze_sales(data)
-                st.chat_message("bot", f"Here is your sales analysis report: {report}")
+                st.chat_message(name="bot", message=f"Here is your sales analysis report: {report}")
             # Additional logic for better offers and price optimization can be added here
         return
 
