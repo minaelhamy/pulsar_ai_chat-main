@@ -1,0 +1,32 @@
+# Django framework
+Django==3.2.12
+
+# Django REST Framework for building APIs
+djangorestframework==3.12.4
+
+# Django Allauth for user authentication
+django-allauth==0.44.0
+
+# Django REST Auth for integrating Django Allauth with Django REST Framework
+dj-rest-auth==2.1.9
+
+# PostgreSQL database adapter for Python (optional, if using PostgreSQL)
+psycopg2-binary==2.9.3
+
+# MySQL database adapter for Python (optional, if using MySQL)
+mysqlclient==2.0.3
+
+# SQLite database adapter for Python (default)
+pysqlite3==0.4.6
+
+# Python requests library for making HTTP requests
+requests==2.26.0
+
+# Pillow for image processing (required by Django)
+Pillow==8.4.0
+
+# Environment variables
+python-decouple==3.5
+
+# CORS headers
+django-cors-headers==3.7.0
