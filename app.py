@@ -91,7 +91,6 @@ def lead_conversation():
             with st.chat_message("bot"):
                 st.write("Great! What's the name of your company?")
             st.session_state.conversation_step += 1
-            st.session_state.user_input = ""
         return
 
     if st.session_state.conversation_step == 2:
@@ -102,7 +101,6 @@ def lead_conversation():
                 st.write("Can you give me a brief about your company and business model?")
             st.session_state.company_name = user_input
             st.session_state.conversation_step += 1
-            st.session_state.user_input = ""
         return
 
     if st.session_state.conversation_step == 3:
@@ -113,7 +111,6 @@ def lead_conversation():
                 st.write("Thank you! What are you looking for today? Better offers, price optimization, or just analytics and recommendations?")
             st.session_state.company_brief = user_input
             st.session_state.conversation_step += 1
-            st.session_state.user_input = ""
         return
 
     if st.session_state.conversation_step == 4:
@@ -133,7 +130,6 @@ def lead_conversation():
                     st.write("Great! Please upload your product data in a CSV file.")
                 st.session_state.user_request = "analytics"
             st.session_state.conversation_step += 1
-            st.session_state.user_input = ""
         return
 
     if st.session_state.conversation_step == 5:
