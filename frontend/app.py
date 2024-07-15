@@ -16,27 +16,28 @@ import sys
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 config = load_config()
 
-# DigitalOcean Spaces configuration
-spaces_region = st.secrets["spaces"]["region"]
-spaces_access_key = st.secrets["spaces"]["access_key"]
-spaces_secret_key = st.secrets["spaces"]["secret_key"]
-bucket_name = st.secrets["spaces"]["bucket_name"]
+# Initialize a session using DigitalOcean Spaces.
+session = boto3.session.Session()
+client = session.client('s3',
+                        region_name=st.secrets["spaces"]["region"],
+                        endpoint_url=f'https://{st.secrets["spaces"]["region"]}.digitaloceanspaces.com',
+                        aws_access_key_id=st.secrets["spaces"]["access_key"],
+                        aws_secret_access_key=st.secrets["spaces"]["secret_key"])
 
-# Initialize Boto3 client
-client = boto3.client(
-    's3',
-    region_name=spaces_region,
-    aws_access_key_id=spaces_access_key,
-    aws_secret_access_key=spaces_secret_key
-)
+# Define the local path where the models will be stored
+local_model_path = './models/'
 
-# Define the paths to the models in your DigitalOcean Space
+# Create the directory if it doesn't exist
+if not os.path.exists(local_model_path):
+    os.makedirs(local_model_path)
+
+# List of models to download with their corresponding keys in DigitalOcean Spaces
 models = {
     "mistral-7b-instruct-v0.1.Q3_K_M.gguf": "mistral-7b-instruct-v0.1.Q3_K_M.gguf",
-    "mistral-7b-instruct-v0.1.Q5_K_M.gguf": "mistral-7b-instruct-v0.1.Q5_K_M.gguf"
+    "mistral-7b-instruct-v0.1.Q5_K_M.gguf": "mistral-7b-instruct-v0.1.Q5_K_M.gguf",
+    "llava_ggml-model-q5_k.gguf": "llava_ggml-model-q5_k.gguf",
+    "mmproj-model-f16.gguf": "mmproj-model-f16.gguf"
 }
-
-local_model_path = "./models"
 
 # Function to download a model if it does not exist locally
 def download_model(local_path, s3_key):
