@@ -126,11 +126,14 @@ def sign_in():
 
 def display_chat():
     """Display the chat history."""
+    st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
+    bot_avatar = os.path.join("frontend", "chat_icons", "pulsar.png")
     for message in st.session_state.chat_history:
         if message["sender"] == "user":
-            st.chat_message("user").write(message["content"])
+            st.markdown(f"<div class='chat-message user'>{message['content']}</div>", unsafe_allow_html=True)
         else:
-            st.chat_message("bot").write(message["content"])
+            st.markdown(f"<div class='chat-message bot'><img src='{bot_avatar}' alt='bot' class='avatar'/> {message['content']}</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 def handle_conversation():
     """Handle the conversation flow based on user input."""
