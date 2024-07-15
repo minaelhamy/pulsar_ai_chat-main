@@ -93,12 +93,6 @@ def display_chat():
 
 def lead_conversation():
     """Handle the conversation flow based on user input."""
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
-    
-    if "conversation_stage" not in st.session_state:
-        st.session_state.conversation_stage = "greeting"
-
     if st.session_state.conversation_stage == "greeting":
         st.chat_message("bot").write("Hello! How are you today?")
         st.session_state.chat_history.append({"sender": "bot", "content": "Hello! How are you today?"})
@@ -135,6 +129,12 @@ def main():
     if st.session_state.session_key == "new_session" and st.session_state.new_session_key is not None:
         st.session_state.session_index_tracker = st.session_state.new_session_key
         st.session_state.new_session_key = None
+
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+
+    if "conversation_stage" not in st.session_state:
+        st.session_state.conversation_stage = "greeting"
 
     if st.session_state.signed_in:
         display_chat()
