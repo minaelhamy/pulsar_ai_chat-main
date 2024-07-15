@@ -31,8 +31,8 @@ client = boto3.client(
 
 # Define the paths to the models in your DigitalOcean Space
 models = {
-    "mistral-7b-instruct-v0.1.Q3_K_M.gguf": "models/mistral-7b-instruct-v0.1.Q3_K_M.gguf",
-    "mistral-7b-instruct-v0.1.Q5_K_M.gguf": "models/mistral-7b-instruct-v0.1.Q5_K_M.gguf"
+    "mistral-7b-instruct-v0.1.Q3_K_M.gguf": "mistral-7b-instruct-v0.1.Q3_K_M.gguf",
+    "mistral-7b-instruct-v0.1.Q5_K_M.gguf": "mistral-7b-instruct-v0.1.Q5_K_M.gguf"
 }
 
 local_model_path = "./models"
