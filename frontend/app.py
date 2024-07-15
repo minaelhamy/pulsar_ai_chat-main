@@ -89,14 +89,14 @@ def lead_conversation():
         st.session_state.conversation_started = False
     
     if not st.session_state.conversation_started:
-        st.chat_message(name="bot", message="Hello! How are you today?")
+        st.chat_message("bot").write("Hello! How are you today?")
         st.session_state.conversation_started = True
         st.session_state.user_input = ""
 
     if st.session_state.user_input:
-        st.chat_message(name="user", message=st.session_state.user_input)
+        st.chat_message("user").write(st.session_state.user_input)
         st.session_state.user_input = ""
-        st.chat_message(name="bot", message="Great! What's the name of your company?")
+        st.chat_message("bot").write("Great! What's the name of your company?")
         st.session_state.user_input = ""
 
 def main():
