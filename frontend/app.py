@@ -111,6 +111,13 @@ def lead_conversation():
         st.chat_message("bot").write("Could you please provide a brief about your business model?")
         st.session_state.chat_history.append({"sender": "bot", "content": "Could you please provide a brief about your business model?"})
         st.session_state.conversation_stage = "ready"
+    elif st.session_state.conversation_stage == "ready":
+        user_input = st.session_state.user_input
+        st.chat_message("user").write(user_input)
+        st.session_state.chat_history.append({"sender": "user", "content": user_input})
+        st.chat_message("bot").write("Thank you for the information. How can I assist you today?")
+        st.session_state.chat_history.append({"sender": "bot", "content": "Thank you for the information. How can I assist you today?"})
+        st.session_state.conversation_stage = "completed"
 
 def main():
     """Main function to render the Streamlit app."""
