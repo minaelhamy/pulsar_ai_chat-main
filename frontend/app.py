@@ -31,8 +31,8 @@ client = boto3.client(
 
 # Define the paths to the models in your DigitalOcean Space
 models = {
-    "mistral-7b-instruct-v0.1.Q3_K_M.gguf": "path/to/mistral-7b-instruct-v0.1.Q3_K_M.gguf",
-    "mistral-7b-instruct-v0.1.Q5_K_M.gguf": "path/to/mistral-7b-instruct-v0.1.Q5_K_M.gguf"
+    "mistral-7b-instruct-v0.1.Q3_K_M.gguf": "models/mistral-7b-instruct-v0.1.Q3_K_M.gguf",
+    "mistral-7b-instruct-v0.1.Q5_K_M.gguf": "models/mistral-7b-instruct-v0.1.Q5_K_M.gguf"
 }
 
 local_model_path = "./models"
@@ -40,8 +40,13 @@ local_model_path = "./models"
 # Function to download a model if it does not exist locally
 def download_model(local_path, s3_key):
     if not os.path.exists(local_path):
-        client.download_file(bucket_name, s3_key, local_path)
-        st.write(f"Downloaded {os.path.basename(local_path)} successfully.")
+        try:
+            client.download_file(bucket_name, s3_key, local_path)
+            st.write(f"Downloaded {os.path.basename(local_path)} successfully.")
+        except client.exceptions.NoSuchKey:
+            st.error(f"Model {s3_key} not found in bucket {bucket_name}. Please check the path and try again.")
+        except Exception as e:
+            st.error(f"Error downloading model: {e}")
     else:
         st.write(f"{os.path.basename(local_path)} already exists locally.")
 
