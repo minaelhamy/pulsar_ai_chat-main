@@ -1,6 +1,7 @@
 import os
 import streamlit as st
 import boto3
+import sqlite3
 from llm_chains import load_normal_chain, load_pdf_chat_chain
 from streamlit_mic_recorder import mic_recorder
 from utils import get_timestamp, load_config, get_avatar
@@ -9,35 +10,32 @@ from audio_handler import transcribe_audio
 from pdf_handler import add_documents_to_db
 from html_templates import css
 from database_operations import load_last_k_text_messages, save_text_message, save_image_message, save_audio_message, load_messages, get_all_chat_history_ids, delete_chat_history
-import sqlite3
 
-__import__('pysqlite3')
-import sys
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 config = load_config()
 
-# Initialize a session using DigitalOcean Spaces.
-session = boto3.session.Session()
-client = session.client('s3',
-                        region_name=st.secrets["spaces"]["region"],
-                        endpoint_url=f'https://{st.secrets["spaces"]["region"]}.digitaloceanspaces.com',
-                        aws_access_key_id=st.secrets["spaces"]["access_key"],
-                        aws_secret_access_key=st.secrets["spaces"]["secret_key"])
+# DigitalOcean Spaces configuration
+spaces_region = st.secrets["spaces"]["region"]
+spaces_access_key = st.secrets["spaces"]["access_key"]
+spaces_secret_key = st.secrets["spaces"]["secret_key"]
+bucket_name = st.secrets["spaces"]["bucket_name"]
+endpoint_url = f"https://{spaces_region}.digitaloceanspaces.com"
 
-# Define the local path where the models will be stored
-local_model_path = './models/'
+# Initialize Boto3 client with the correct endpoint URL
+client = boto3.client(
+    's3',
+    region_name=spaces_region,
+    aws_access_key_id=spaces_access_key,
+    aws_secret_access_key=spaces_secret_key,
+    endpoint_url=endpoint_url
+)
 
-# Create the directory if it doesn't exist
-if not os.path.exists(local_model_path):
-    os.makedirs(local_model_path)
-
-# List of models to download with their corresponding keys in DigitalOcean Spaces
+# Define the paths to the models in your DigitalOcean Space
 models = {
-    "mistral-7b-instruct-v0.1.Q3_K_M.gguf": "mistral-7b-instruct-v0.1.Q3_K_M.gguf",
-    "mistral-7b-instruct-v0.1.Q5_K_M.gguf": "mistral-7b-instruct-v0.1.Q5_K_M.gguf",
-    "llava_ggml-model-q5_k.gguf": "llava_ggml-model-q5_k.gguf",
-    "mmproj-model-f16.gguf": "mmproj-model-f16.gguf"
+    "mistral-7b-instruct-v0.1.Q3_K_M.gguf": "path/to/mistral-7b-instruct-v0.1.Q3_K_M.gguf",
+    "mistral-7b-instruct-v0.1.Q5_K_M.gguf": "path/to/mistral-7b-instruct-v0.1.Q5_K_M.gguf"
 }
+
+local_model_path = "./models"
 
 # Function to download a model if it does not exist locally
 def download_model(local_path, s3_key):
