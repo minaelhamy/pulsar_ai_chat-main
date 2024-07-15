@@ -48,8 +48,7 @@ def download_model(local_path, s3_key):
             st.error(f"Model {s3_key} not found in bucket {bucket_name}. Please check the path and try again.")
         except Exception as e:
             st.error(f"Error downloading model: {e}")
-    else:
-        st.write(f"{os.path.basename(local_path)} already exists locally.")
+    
 
 # Download each model
 for local_model, s3_key in models.items():
