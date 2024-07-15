@@ -148,7 +148,7 @@ def handle_conversation():
 def main():
     """Main function to render the Streamlit app."""
     st.title("Pulsar Apps Assistant")
-    st.write(css, unsafe_allow_html=True)
+    st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
     
     if "db_conn" not in st.session_state:
         st.session_state.session_key = "new_session"
