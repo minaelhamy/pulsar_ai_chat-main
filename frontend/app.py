@@ -127,7 +127,7 @@ def sign_in():
 def display_chat():
     """Display the chat history."""
     st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
-    bot_avatar = os.path.join("frontend", "chat_icons", "pulsar.png")
+    bot_avatar = os.path.join("chat_icons", "pulsar.png")
     for message in st.session_state.chat_history:
         if message["sender"] == "user":
             st.markdown(f"<div class='chat-message user'>{message['content']}</div>", unsafe_allow_html=True)
