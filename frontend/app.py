@@ -91,11 +91,9 @@ def lead_conversation():
     if not st.session_state.conversation_started:
         st.chat_message("bot").write("Hello! How are you today?")
         st.session_state.conversation_started = True
-        st.session_state.user_input = ""
 
-    if st.session_state.user_input:
+    if "user_input" in st.session_state and st.session_state.user_input:
         st.chat_message("user").write(st.session_state.user_input)
-        st.session_state.user_input = ""
         st.chat_message("bot").write("Great! What's the name of your company?")
         st.session_state.user_input = ""
 
@@ -119,6 +117,11 @@ def main():
 
     if st.session_state.signed_in:
         lead_conversation()
+        # Add a chat input box for user to reply
+        user_input = st.chat_input("Type your message here...")
+        if user_input:
+            st.session_state.user_input = user_input
+            st.experimental_rerun()
     else:
         col1, col2 = st.columns(2)
         with col1:
