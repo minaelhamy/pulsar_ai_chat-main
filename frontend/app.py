@@ -1,4 +1,6 @@
+import os
 import streamlit as st
+import boto3
 from llm_chains import load_normal_chain, load_pdf_chat_chain
 from streamlit_mic_recorder import mic_recorder
 from utils import get_timestamp, load_config, get_avatar
@@ -13,6 +15,41 @@ __import__('pysqlite3')
 import sys
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 config = load_config()
+
+# DigitalOcean Spaces configuration
+spaces_region = st.secrets["spaces"]["region"]
+spaces_access_key = st.secrets["spaces"]["access_key"]
+spaces_secret_key = st.secrets["spaces"]["secret_key"]
+bucket_name = st.secrets["spaces"]["bucket_name"]
+
+# Initialize Boto3 client
+client = boto3.client(
+    's3',
+    region_name=spaces_region,
+    aws_access_key_id=spaces_access_key,
+    aws_secret_access_key=spaces_secret_key
+)
+
+# Define the paths to the models in your DigitalOcean Space
+models = {
+    "mistral-7b-instruct-v0.1.Q3_K_M.gguf": "path/to/mistral-7b-instruct-v0.1.Q3_K_M.gguf",
+    "mistral-7b-instruct-v0.1.Q5_K_M.gguf": "path/to/mistral-7b-instruct-v0.1.Q5_K_M.gguf"
+}
+
+local_model_path = "./models"
+
+# Function to download a model if it does not exist locally
+def download_model(local_path, s3_key):
+    if not os.path.exists(local_path):
+        client.download_file(bucket_name, s3_key, local_path)
+        st.write(f"Downloaded {os.path.basename(local_path)} successfully.")
+    else:
+        st.write(f"{os.path.basename(local_path)} already exists locally.")
+
+# Download each model
+for local_model, s3_key in models.items():
+    local_path = os.path.join(local_model_path, local_model)
+    download_model(local_path, s3_key)
 
 @st.cache_resource
 def load_chain():
