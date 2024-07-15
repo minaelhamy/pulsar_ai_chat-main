@@ -83,19 +83,40 @@ def sign_in():
         else:
             st.error("Failed to sign in. Please try again.")
 
-def lead_conversation():
-    """Start the conversation by asking initial questions."""
-    if "conversation_started" not in st.session_state:
-        st.session_state.conversation_started = False
-    
-    if not st.session_state.conversation_started:
-        st.chat_message("bot").write("Hello! How are you today?")
-        st.session_state.conversation_started = True
+def display_chat():
+    """Display the chat history."""
+    for message in st.session_state.chat_history:
+        if message["sender"] == "user":
+            st.chat_message("user").write(message["content"])
+        else:
+            st.chat_message("bot").write(message["content"])
 
-    if "user_input" in st.session_state and st.session_state.user_input:
-        st.chat_message("user").write(st.session_state.user_input)
+def lead_conversation():
+    """Handle the conversation flow based on user input."""
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+    
+    if "conversation_stage" not in st.session_state:
+        st.session_state.conversation_stage = "greeting"
+
+    if st.session_state.conversation_stage == "greeting":
+        st.chat_message("bot").write("Hello! How are you today?")
+        st.session_state.chat_history.append({"sender": "bot", "content": "Hello! How are you today?"})
+        st.session_state.conversation_stage = "ask_company_name"
+    elif st.session_state.conversation_stage == "ask_company_name":
+        user_input = st.session_state.user_input
+        st.chat_message("user").write(user_input)
+        st.session_state.chat_history.append({"sender": "user", "content": user_input})
         st.chat_message("bot").write("Great! What's the name of your company?")
-        st.session_state.user_input = ""
+        st.session_state.chat_history.append({"sender": "bot", "content": "Great! What's the name of your company?"})
+        st.session_state.conversation_stage = "ask_business_model"
+    elif st.session_state.conversation_stage == "ask_business_model":
+        user_input = st.session_state.user_input
+        st.chat_message("user").write(user_input)
+        st.session_state.chat_history.append({"sender": "user", "content": user_input})
+        st.chat_message("bot").write("Could you please provide a brief about your business model?")
+        st.session_state.chat_history.append({"sender": "bot", "content": "Could you please provide a brief about your business model?"})
+        st.session_state.conversation_stage = "ready"
 
 def main():
     """Main function to render the Streamlit app."""
@@ -116,11 +137,11 @@ def main():
         st.session_state.new_session_key = None
 
     if st.session_state.signed_in:
-        lead_conversation()
-        # Add a chat input box for user to reply
+        display_chat()
         user_input = st.chat_input("Type your message here...")
         if user_input:
             st.session_state.user_input = user_input
+            lead_conversation()
             st.experimental_rerun()
     else:
         col1, col2 = st.columns(2)
