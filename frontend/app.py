@@ -77,7 +77,9 @@ def sign_in():
         # authenticated = authenticate_user(email, password)
         authenticated = True  # Placeholder for actual implementation
         if authenticated:
+            st.session_state.signed_in = True
             st.success("You have successfully signed in!")
+            st.experimental_rerun()
         else:
             st.error("Failed to sign in. Please try again.")
 
@@ -109,20 +111,28 @@ def main():
         st.session_state.db_conn = sqlite3.connect(config["chat_sessions_database_path"], check_same_thread=False)
         st.session_state.audio_uploader_key = 0
         st.session_state.pdf_uploader_key = 1
+        st.session_state.signed_in = False
     
     if st.session_state.session_key == "new_session" and st.session_state.new_session_key is not None:
         st.session_state.session_index_tracker = st.session_state.new_session_key
         st.session_state.new_session_key = None
 
-    st.sidebar.title("Navigation")
-    app_mode = st.sidebar.selectbox("Choose the app mode", ["Sign Up", "Sign In", "Chat"])
-
-    if app_mode == "Sign Up":
-        sign_up()
-    elif app_mode == "Sign In":
-        sign_in()
-    elif app_mode == "Chat":
+    if st.session_state.signed_in:
         lead_conversation()
+    else:
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Sign In", key="nav_signin_button"):
+                st.session_state.nav_mode = "Sign In"
+        with col2:
+            if st.button("Sign Up", key="nav_signup_button"):
+                st.session_state.nav_mode = "Sign Up"
+        
+        if "nav_mode" in st.session_state:
+            if st.session_state.nav_mode == "Sign In":
+                sign_in()
+            elif st.session_state.nav_mode == "Sign Up":
+                sign_up()
 
 if __name__ == "__main__":
     main()
