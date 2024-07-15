@@ -128,11 +128,12 @@ def display_chat():
     """Display the chat history."""
     st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
     bot_avatar = os.path.join("chat_icons", "pulsar.png")
+    bot_avatar_path = os.path.join("frontend", bot_avatar)
     for message in st.session_state.chat_history:
         if message["sender"] == "user":
             st.markdown(f"<div class='chat-message user'>{message['content']}</div>", unsafe_allow_html=True)
         else:
-            st.markdown(f"<div class='chat-message bot'><img src='{bot_avatar}' alt='bot' class='avatar'/> {message['content']}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='chat-message bot'><img src='{bot_avatar_path}' alt='bot' class='avatar' style='width:30px; height:30px; margin-right:10px;'/> {message['content']}</div>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 def handle_conversation():
