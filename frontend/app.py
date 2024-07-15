@@ -2,6 +2,7 @@ import os
 import streamlit as st
 import boto3
 import sqlite3
+import pandas as pd
 from llm_chains import load_normal_chain, load_pdf_chat_chain
 from streamlit_mic_recorder import mic_recorder
 from utils import get_timestamp, load_config, get_avatar
@@ -58,9 +59,9 @@ for local_model, s3_key in models.items():
 @st.cache_resource
 def load_chain():
     """Load the appropriate language model chain based on the chat type."""
-    if st.session_state.pdf_chat:
-        print("loading pdf chat chain")
-        return load_pdf_chat_chain()
+    #if st.session_state.pdf_chat:
+     #   print("loading pdf chat chain")
+      #  return load_pdf_chat_chain()
     return load_normal_chain()
 
 def toggle_pdf_chat():
@@ -132,33 +133,17 @@ def display_chat():
         else:
             st.chat_message("bot").write(message["content"])
 
-def lead_conversation():
+def handle_conversation():
     """Handle the conversation flow based on user input."""
-    if st.session_state.conversation_stage == "greeting":
-        st.chat_message("bot").write("Hello! How are you today?")
-        st.session_state.chat_history.append({"sender": "bot", "content": "Hello! How are you today?"})
-        st.session_state.conversation_stage = "ask_company_name"
-    elif st.session_state.conversation_stage == "ask_company_name":
-        user_input = st.session_state.user_input
+    user_input = st.session_state.user_input
+    if user_input:
         st.chat_message("user").write(user_input)
         st.session_state.chat_history.append({"sender": "user", "content": user_input})
-        st.chat_message("bot").write("Great! What's the name of your company?")
-        st.session_state.chat_history.append({"sender": "bot", "content": "Great! What's the name of your company?"})
-        st.session_state.conversation_stage = "ask_business_model"
-    elif st.session_state.conversation_stage == "ask_business_model":
-        user_input = st.session_state.user_input
-        st.chat_message("user").write(user_input)
-        st.session_state.chat_history.append({"sender": "user", "content": user_input})
-        st.chat_message("bot").write("Could you please provide a brief about your business model?")
-        st.session_state.chat_history.append({"sender": "bot", "content": "Could you please provide a brief about your business model?"})
-        st.session_state.conversation_stage = "ready"
-    elif st.session_state.conversation_stage == "ready":
-        user_input = st.session_state.user_input
-        st.chat_message("user").write(user_input)
-        st.session_state.chat_history.append({"sender": "user", "content": user_input})
-        st.chat_message("bot").write("Thank you for the information. How can I assist you today?")
-        st.session_state.chat_history.append({"sender": "bot", "content": "Thank you for the information. How can I assist you today?"})
-        st.session_state.conversation_stage = "completed"
+        llm_chain = load_chain()
+        llm_answer = llm_chain.run(user_input=user_input, chat_history=load_last_k_text_messages(get_session_key(), config["chat_config"]["chat_memory_length"]))
+        st.chat_message("bot").write(llm_answer)
+        st.session_state.chat_history.append({"sender": "bot", "content": llm_answer})
+
 
 def main():
     """Main function to render the Streamlit app."""
@@ -189,8 +174,15 @@ def main():
         user_input = st.chat_input("Type your message here...")
         if user_input:
             st.session_state.user_input = user_input
-            lead_conversation()
+            handle_conversation()
             st.experimental_rerun()
+            
+        uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
+        if uploaded_file:
+            df = pd.read_csv(uploaded_file)
+            st.write("CSV file contents:")
+            st.write(df)
+            # You can add logic to analyze the CSV file here    
     else:
         col1, col2 = st.columns(2)
         with col1:
