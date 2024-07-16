@@ -3,14 +3,10 @@ import streamlit as st
 import boto3
 import sqlite3
 import pandas as pd
-from llm_chains import load_normal_chain, load_pdf_chat_chain
-from streamlit_mic_recorder import mic_recorder
+from llm_chains import load_normal_chain
 from utils import get_timestamp, load_config, get_avatar
-from image_handler import handle_image
-from audio_handler import transcribe_audio
-from pdf_handler import add_documents_to_db
-from html_templates import css
-from database_operations import load_last_k_text_messages, save_text_message, save_image_message, save_audio_message, load_messages, get_all_chat_history_ids, delete_chat_history
+from database_operations import load_last_k_text_messages, save_text_message, load_messages, get_all_chat_history_ids, delete_chat_history
+from html_templates import css  # Import the CSS from html_templates
 
 config = load_config()
 
@@ -32,8 +28,8 @@ client = boto3.client(
 
 # Define the paths to the models in your DigitalOcean Space
 models = {
-    "mistral-7b-instruct-v0.1.Q3_K_M.gguf": "mistral-7b-instruct-v0.1.Q3_K_M.gguf",
-    "mistral-7b-instruct-v0.1.Q5_K_M.gguf": "mistral-7b-instruct-v0.1.Q5_K_M.gguf"
+    "mistral-7b-instruct-v0.1.Q3_K_M.gguf": "models/mistral-7b-instruct-v0.1.Q3_K_M.gguf",
+    "mistral-7b-instruct-v0.1.Q5_K_M.gguf": "models/mistral-7b-instruct-v0.1.Q5_K_M.gguf"
 }
 
 local_model_path = "./models"
@@ -48,7 +44,6 @@ def download_model(local_path, s3_key):
             st.error(f"Model {s3_key} not found in bucket {bucket_name}. Please check the path and try again.")
         except Exception as e:
             st.error(f"Error downloading model: {e}")
-    
 
 # Download each model
 for local_model, s3_key in models.items():
@@ -57,16 +52,8 @@ for local_model, s3_key in models.items():
 
 @st.cache_resource
 def load_chain():
-    """Load the appropriate language model chain based on the chat type."""
-    #if st.session_state.pdf_chat:
-     #   print("loading pdf chat chain")
-      #  return load_pdf_chat_chain()
+    """Load the language model chain."""
     return load_normal_chain()
-
-def toggle_pdf_chat():
-    """Toggle the state to indicate whether PDF chat is enabled."""
-    st.session_state.pdf_chat = True
-    clear_cache()
 
 def get_session_key():
     """Get the current session key, generate a new one if it's a new session."""
@@ -140,13 +127,52 @@ def handle_conversation():
     """Handle the conversation flow based on user input."""
     user_input = st.session_state.user_input
     if user_input:
-        st.chat_message("user").write(user_input)
         st.session_state.chat_history.append({"sender": "user", "content": user_input})
+        display_chat()
         llm_chain = load_chain()
         llm_answer = llm_chain.run(user_input=user_input, chat_history=load_last_k_text_messages(get_session_key(), config["chat_config"]["chat_memory_length"]))
-        st.chat_message("bot").write(llm_answer)
         st.session_state.chat_history.append({"sender": "bot", "content": llm_answer})
+        display_chat()
 
+def lead_conversation():
+    """Lead the conversation for new users."""
+    if "conversation_step" not in st.session_state:
+        st.session_state.conversation_step = 0
+
+    if st.session_state.conversation_step == 0:
+        st.session_state.chat_history.append({"sender": "bot", "content": "Hello! How are you today?"})
+        display_chat()
+        st.session_state.conversation_step += 1
+    elif st.session_state.conversation_step == 1:
+        st.session_state.chat_history.append({"sender": "bot", "content": "What is the name of your company?"})
+        display_chat()
+        st.session_state.conversation_step += 1
+    elif st.session_state.conversation_step == 2:
+        st.session_state.chat_history.append({"sender": "bot", "content": "Could you please provide a brief about your business model?"})
+        display_chat()
+        st.session_state.conversation_step += 1
+    elif st.session_state.conversation_step == 3:
+        st.session_state.chat_history.append({"sender": "bot", "content": "Please upload a CSV file containing the product IDs, names, cost price, selling price, competitor price if available, and history of sales if possible."})
+        display_chat()
+        st.session_state.conversation_step += 1
+    elif st.session_state.conversation_step == 4:
+        uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
+        if uploaded_file:
+            df = pd.read_csv(uploaded_file)
+            st.write("CSV file contents:")
+            st.write(df)
+            st.session_state.chat_history.append({"sender": "bot", "content": "CSV file uploaded successfully."})
+            display_chat()
+            st.session_state.conversation_step += 1
+    elif st.session_state.conversation_step == 5:
+        st.session_state.chat_history.append({"sender": "bot", "content": "What is your desired gross margin?"})
+        display_chat()
+        st.session_state.conversation_step += 1
+    elif st.session_state.conversation_step == 6:
+        st.session_state.chat_history.append({"sender": "bot", "content": "Thank you! Let's proceed with the analysis."})
+        display_chat()
+        # Continue with analysis and other logic here
+        st.session_state.conversation_step += 1
 
 def main():
     """Main function to render the Streamlit app."""
@@ -158,8 +184,6 @@ def main():
         st.session_state.new_session_key = None
         st.session_state.session_index_tracker = "new_session"
         st.session_state.db_conn = sqlite3.connect(config["chat_sessions_database_path"], check_same_thread=False)
-        st.session_state.audio_uploader_key = 0
-        st.session_state.pdf_uploader_key = 1
         st.session_state.signed_in = False
     
     if st.session_state.session_key == "new_session" and st.session_state.new_session_key is not None:
@@ -169,23 +193,16 @@ def main():
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    if "conversation_stage" not in st.session_state:
-        st.session_state.conversation_stage = "greeting"
-
     if st.session_state.signed_in:
-        display_chat()
-        user_input = st.chat_input("Type your message here...")
-        if user_input:
-            st.session_state.user_input = user_input
-            handle_conversation()
-            st.experimental_rerun()
-            
-        uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
-        if uploaded_file:
-            df = pd.read_csv(uploaded_file)
-            st.write("CSV file contents:")
-            st.write(df)
-            # You can add logic to analyze the CSV file here    
+        if "conversation_step" not in st.session_state or st.session_state.conversation_step < 6:
+            lead_conversation()
+        else:
+            display_chat()
+            user_input = st.chat_input("Type your message here...")
+            if user_input:
+                st.session_state.user_input = user_input
+                handle_conversation()
+                st.experimental_rerun()
     else:
         col1, col2 = st.columns(2)
         with col1:
