@@ -114,25 +114,22 @@ def sign_in():
 def display_chat():
     """Display the chat history."""
     st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
-    bot_avatar = os.path.join("chat_icons", "pulsar.png")
-    bot_avatar_path = os.path.join("frontend", bot_avatar)
+    bot_avatar = os.path.join("frontend", "chat_icons", "pulsar.png")
     for message in st.session_state.chat_history:
         if message["sender"] == "user":
             st.markdown(f"<div class='chat-message user'>{message['content']}</div>", unsafe_allow_html=True)
         else:
-            st.markdown(f"<div class='chat-message bot'><img src='{bot_avatar_path}' alt='bot' class='avatar' style='width:30px; height:30px; margin-right:10px;'/> {message['content']}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='chat-message bot'><img src='{bot_avatar}' alt='bot' class='avatar' style='width:30px; height:30px; margin-right:10px;'/> {message['content']}</div>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-def handle_conversation():
+def handle_conversation(user_input):
     """Handle the conversation flow based on user input."""
-    user_input = st.session_state.user_input
-    if user_input:
-        st.session_state.chat_history.append({"sender": "user", "content": user_input})
-        display_chat()
-        llm_chain = load_chain()
-        llm_answer = llm_chain.run(user_input=user_input, chat_history=load_last_k_text_messages(get_session_key(), config["chat_config"]["chat_memory_length"]))
-        st.session_state.chat_history.append({"sender": "bot", "content": llm_answer})
-        display_chat()
+    st.session_state.chat_history.append({"sender": "user", "content": user_input})
+    display_chat()
+    llm_chain = load_chain()
+    llm_answer = llm_chain.run(user_input=user_input, chat_history=load_last_k_text_messages(get_session_key(), config["chat_config"]["chat_memory_length"]))
+    st.session_state.chat_history.append({"sender": "bot", "content": llm_answer})
+    display_chat()
 
 def lead_conversation():
     """Lead the conversation for new users."""
@@ -154,8 +151,6 @@ def lead_conversation():
     elif st.session_state.conversation_step == 3:
         st.session_state.chat_history.append({"sender": "bot", "content": "Please upload a CSV file containing the product IDs, names, cost price, selling price, competitor price if available, and history of sales if possible."})
         display_chat()
-        st.session_state.conversation_step += 1
-    elif st.session_state.conversation_step == 4:
         uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
         if uploaded_file:
             df = pd.read_csv(uploaded_file)
@@ -164,11 +159,11 @@ def lead_conversation():
             st.session_state.chat_history.append({"sender": "bot", "content": "CSV file uploaded successfully."})
             display_chat()
             st.session_state.conversation_step += 1
-    elif st.session_state.conversation_step == 5:
+    elif st.session_state.conversation_step == 4:
         st.session_state.chat_history.append({"sender": "bot", "content": "What is your desired gross margin?"})
         display_chat()
         st.session_state.conversation_step += 1
-    elif st.session_state.conversation_step == 6:
+    elif st.session_state.conversation_step == 5:
         st.session_state.chat_history.append({"sender": "bot", "content": "Thank you! Let's proceed with the analysis."})
         display_chat()
         # Continue with analysis and other logic here
@@ -198,10 +193,9 @@ def main():
             lead_conversation()
         else:
             display_chat()
-            user_input = st.chat_input("Type your message here...")
-            if user_input:
-                st.session_state.user_input = user_input
-                handle_conversation()
+            user_input = st.text_input("Type your message here...", key="user_input")
+            if st.button("Send", key="send_button"):
+                handle_conversation(user_input)
                 st.experimental_rerun()
     else:
         col1, col2 = st.columns(2)
