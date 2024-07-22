@@ -6,7 +6,7 @@ import pandas as pd
 from llm_chains import load_normal_chain
 from utils import get_timestamp, load_config, get_avatar
 from database_operations import load_last_k_text_messages, save_text_message, load_messages, get_all_chat_history_ids, delete_chat_history
-from html_templates import css  # Import the CSS from html_templates
+from html_templates import css  # Import the CSS from html_template
 
 config = load_config()
 
