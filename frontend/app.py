@@ -137,38 +137,42 @@ def lead_conversation():
     if "conversation_step" not in st.session_state:
         st.session_state.conversation_step = 0
 
-    if st.session_state.conversation_step == 0:
-        st.session_state.chat_history.append({"sender": "bot", "content": "Hello! How are you today?"})
+    bot_messages = [
+        "Hello! How are you today?",
+        "What is the name of your company?",
+        "Could you please provide a brief about your business model?",
+        "Please upload a CSV file containing the product IDs, names, cost price, selling price, competitor price if available, and history of sales if possible.",
+        "What is your desired gross margin?",
+        "Thank you! Let's proceed with the analysis."
+    ]
+
+    if st.session_state.conversation_step < len(bot_messages):
+        if len(st.session_state.chat_history) == 0 or st.session_state.chat_history[-1]["sender"] != "bot":
+            st.session_state.chat_history.append({"sender": "bot", "content": bot_messages[st.session_state.conversation_step]})
+        
         display_chat()
-        st.session_state.conversation_step += 1
-    elif st.session_state.conversation_step == 1:
-        st.session_state.chat_history.append({"sender": "bot", "content": "What is the name of your company?"})
+
+        if st.session_state.conversation_step == 3:
+            uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
+            if uploaded_file:
+                df = pd.read_csv(uploaded_file)
+                st.write("CSV file contents:")
+                st.write(df)
+                st.session_state.chat_history.append({"sender": "bot", "content": "CSV file uploaded successfully."})
+                st.session_state.conversation_step += 1
+                st.experimental_rerun()
+        else:
+            user_input = st.text_input("Type your message here...", key=f"user_input_{st.session_state.conversation_step}")
+            if user_input:
+                st.session_state.chat_history.append({"sender": "user", "content": user_input})
+                st.session_state.conversation_step += 1
+                st.experimental_rerun()
+    else:
         display_chat()
-        st.session_state.conversation_step += 1
-    elif st.session_state.conversation_step == 2:
-        st.session_state.chat_history.append({"sender": "bot", "content": "Could you please provide a brief about your business model?"})
-        display_chat()
-        st.session_state.conversation_step += 1
-    elif st.session_state.conversation_step == 3:
-        st.session_state.chat_history.append({"sender": "bot", "content": "Please upload a CSV file containing the product IDs, names, cost price, selling price, competitor price if available, and history of sales if possible."})
-        display_chat()
-        uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
-        if uploaded_file:
-            df = pd.read_csv(uploaded_file)
-            st.write("CSV file contents:")
-            st.write(df)
-            st.session_state.chat_history.append({"sender": "bot", "content": "CSV file uploaded successfully."})
-            display_chat()
-            st.session_state.conversation_step += 1
-    elif st.session_state.conversation_step == 4:
-        st.session_state.chat_history.append({"sender": "bot", "content": "What is your desired gross margin?"})
-        display_chat()
-        st.session_state.conversation_step += 1
-    elif st.session_state.conversation_step == 5:
-        st.session_state.chat_history.append({"sender": "bot", "content": "Thank you! Let's proceed with the analysis."})
-        display_chat()
-        # Continue with analysis and other logic here
-        st.session_state.conversation_step += 1
+        user_input = st.text_input("Type your message here...", key="user_input")
+        if user_input:
+            handle_conversation(user_input)
+            st.experimental_rerun()
 
 def main():
     """Main function to render the Streamlit app."""
