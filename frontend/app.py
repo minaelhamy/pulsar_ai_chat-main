@@ -9,6 +9,8 @@ from utils import get_timestamp, load_config, get_avatar
 from database_operations import load_last_k_text_messages, save_text_message, load_messages, get_all_chat_history_ids, delete_chat_history
 from html_templates import css
 
+#st.write(f"ctransformers version: {ctransformers.__version__}")
+
 config = load_config()
 
 # DigitalOcean Spaces configuration
@@ -51,8 +53,17 @@ for local_model, s3_key in models.items():
 @st.cache_resource
 def load_model():
     model_path = os.path.join(local_model_path, "mistral-7b-instruct-v0.1.Q5_K_M.gguf")
-    model = AutoModelForCausalLM.from_pretrained(model_path, model_type="mistral")
-    return model
+    st.write(f"Attempting to load model from: {os.path.abspath(model_path)}")
+
+    if not os.path.exists(model_path):
+        st.error(f"Model file not found at {model_path}")
+        return None
+    try:
+        model = AutoModelForCausalLM.from_pretrained(model_path, model_type="mistral")
+        return model
+    except Exception as e:
+        st.error(f"Error loading model: {str(e)}")
+        return None
 
 model = load_model()
 
@@ -73,9 +84,16 @@ Your response:
 """
 
 def generate_consultant_response(context):
+    if model is None:
+        return "I apologize, but I'm having trouble accessing my knowledge. Please try again later."
     prompt = CONSULTANT_PROMPT.format(context=context)
-    response = model(prompt, max_new_tokens=500, temperature=0.7, top_p=0.95)
-    return response
+    try:
+        response = model(prompt, max_new_tokens=500, temperature=0.7, top_p=0.95)
+        return response
+    except Exception as e:
+        st.error(f"Error generating response: {str(e)}")
+        return "I'm sorry, but I encountered an error while processing your request. Please try again."
+
 
 def get_session_key():
     if st.session_state.session_key == "new_session":

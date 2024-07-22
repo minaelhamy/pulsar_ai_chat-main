@@ -30,3 +30,5 @@ python-decouple==3.5
 
 # CORS headers
 django-cors-headers==3.7.0
+
+ctransformers
