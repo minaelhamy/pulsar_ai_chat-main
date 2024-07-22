@@ -4,12 +4,11 @@ import boto3
 import sqlite3
 import pandas as pd
 from ctransformers import AutoModelForCausalLM
-from transformers import AutoTokenizer, AutoModelForCausalLM
 from utils import get_timestamp, load_config, get_avatar
 from database_operations import load_last_k_text_messages, save_text_message, load_messages, get_all_chat_history_ids, delete_chat_history
 from html_templates import css
 
-#st.write(f"ctransformers version: {ctransformers.__version__}")
+st.write(f"ctransformers version: {ctransformers.__version__}")
 
 config = load_config()
 
@@ -31,8 +30,8 @@ client = boto3.client(
 
 # Define the paths to the models in your DigitalOcean Space
 models = {
-    "mistral-7b-instruct-v0.1.Q3_K_M.gguf": "mistral-7b-instruct-v0.1.Q3_K_M.gguf",
-    "mistral-7b-instruct-v0.1.Q5_K_M.gguf": "mistral-7b-instruct-v0.1.Q5_K_M.gguf"
+    "mistral-7b-instruct-v0.1.Q3_K_M.gguf": "models/mistral-7b-instruct-v0.1.Q3_K_M.gguf",
+    "mistral-7b-instruct-v0.1.Q5_K_M.gguf": "models/mistral-7b-instruct-v0.1.Q5_K_M.gguf"
 }
 
 local_model_path = "./models"
@@ -94,7 +93,6 @@ def generate_consultant_response(context):
         st.error(f"Error generating response: {str(e)}")
         return "I'm sorry, but I encountered an error while processing your request. Please try again."
 
-
 def get_session_key():
     if st.session_state.session_key == "new_session":
         st.session_state.new_session_key = get_timestamp()
@@ -144,8 +142,8 @@ def sign_in():
 
 def display_chat():
     st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
-    bot_avatar = "https://your-space-url.digitaloceanspaces.com/chat_icons/pulsar.png"
-    user_avatar = "https://your-space-url.digitaloceanspaces.com/chat_icons/user.png"
+    bot_avatar = "https://your-actual-space-url.digitaloceanspaces.com/chat_icons/pulsar.png"
+    user_avatar = "https://your-actual-space-url.digitaloceanspaces.com/chat_icons/user.png"
     for message in st.session_state.chat_history:
         if message["sender"] == "user":
             st.markdown(f"<div class='chat-message user'><img src='{user_avatar}' alt='user' class='avatar' style='width:30px; height:30px; margin-right:10px;'/> {message['content']}</div>", unsafe_allow_html=True)
@@ -208,13 +206,9 @@ def lead_conversation():
         else:
             user_input = st.text_input("Type your message here...", key=f"user_input_{st.session_state.conversation_step}")
             if user_input:
-                st.session_state.chat_history.append({"sender": "user", "content": user_input})
+                handle_conversation(user_input)
                 st.session_state.user_data[f'step_{st.session_state.conversation_step}'] = user_input
                 st.session_state.conversation_step += 1
-                
-                response = generate_consultant_response("\n".join([f"{k}: {v}" for k, v in st.session_state.user_data.items()]))
-                st.session_state.chat_history.append({"sender": "bot", "content": response})
-                
                 st.experimental_rerun()
     else:
         display_chat()
