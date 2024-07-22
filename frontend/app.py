@@ -115,9 +115,10 @@ def display_chat():
     """Display the chat history."""
     st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
     bot_avatar = os.path.join("frontend", "chat_icons", "pulsar.png")
+    user_avatar = os.path.join("frontend", "chat_icons", "user.png")
     for message in st.session_state.chat_history:
         if message["sender"] == "user":
-            st.markdown(f"<div class='chat-message user'>{message['content']}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='chat-message user'><img src='{user_avatar}' alt='user' class='avatar' style='width:30px; height:30px; margin-right:10px;'/> {message['content']}</div>", unsafe_allow_html=True)
         else:
             st.markdown(f"<div class='chat-message bot'><img src='{bot_avatar}' alt='bot' class='avatar' style='width:30px; height:30px; margin-right:10px;'/> {message['content']}</div>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
@@ -194,7 +195,7 @@ def main():
         else:
             display_chat()
             user_input = st.text_input("Type your message here...", key="user_input")
-            if st.button("Send", key="send_button"):
+            if user_input:
                 handle_conversation(user_input)
                 st.experimental_rerun()
     else:
