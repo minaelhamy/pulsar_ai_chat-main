@@ -3,6 +3,7 @@ import streamlit as st
 import boto3
 import sqlite3
 import pandas as pd
+from ctransformers import AutoModelForCausalLM
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from utils import get_timestamp, load_config, get_avatar
 from database_operations import load_last_k_text_messages, save_text_message, load_messages, get_all_chat_history_ids, delete_chat_history
@@ -50,11 +51,10 @@ for local_model, s3_key in models.items():
 @st.cache_resource
 def load_model():
     model_path = os.path.join(local_model_path, "mistral-7b-instruct-v0.1.Q5_K_M.gguf")
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
-    model = AutoModelForCausalLM.from_pretrained(model_path)
-    return tokenizer, model
+    model = AutoModelForCausalLM.from_pretrained(model_path, model_type="mistral")
+    return model
 
-tokenizer, model = load_model()
+model = load_model()
 
 CONSULTANT_PROMPT = """
 You are an AI business consultant from a top firm like Bain & Co, BCG, EY, PWC, or McKinsey. 
@@ -73,9 +73,9 @@ Your response:
 """
 
 def generate_consultant_response(context):
-    inputs = tokenizer(CONSULTANT_PROMPT.format(context=context), return_tensors="pt")
-    outputs = model.generate(**inputs, max_length=500)
-    return tokenizer.decode(outputs[0], skip_special_tokens=True)
+    prompt = CONSULTANT_PROMPT.format(context=context)
+    response = model(prompt, max_new_tokens=500, temperature=0.7, top_p=0.95)
+    return response
 
 def get_session_key():
     if st.session_state.session_key == "new_session":
