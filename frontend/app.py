@@ -9,8 +9,6 @@ from utils import get_timestamp, load_config, get_avatar
 from database_operations import load_last_k_text_messages, save_text_message, load_messages, get_all_chat_history_ids, delete_chat_history
 from html_templates import css
 
-#st.write(f"ctransformers version: {ctransformers.__version__}")
-
 config = load_config()
 
 # DigitalOcean Spaces configuration
@@ -143,8 +141,8 @@ def sign_in():
 
 def display_chat():
     st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
-    bot_avatar = "https://your-actual-space-url.digitaloceanspaces.com/chat_icons/pulsar.png"
-    user_avatar = "https://your-actual-space-url.digitaloceanspaces.com/chat_icons/user.png"
+    bot_avatar = "https://pulsarchatmodel.ams3.cdn.digitaloceanspaces.com/AoGxnGDP6zpvk6if7CoQ4N-1200-80.jpg"
+    user_avatar = "https://pulsarchatmodel.ams3.cdn.digitaloceanspaces.com/anonymous-user-circle-icon-vector-illustration-flat-style-with-long-shadow_520826-1931.png"
     for message in st.session_state.chat_history:
         if message["sender"] == "user":
             st.markdown(f"<div class='chat-message user'><img src='{user_avatar}' alt='user' class='avatar' style='width:30px; height:30px; margin-right:10px;'/> {message['content']}</div>", unsafe_allow_html=True)
@@ -161,62 +159,6 @@ def handle_conversation(user_input):
     
     st.session_state.chat_history.append({"sender": "bot", "content": response})
     display_chat()
-
-def analyze_csv_data(df):
-    # Perform analysis on the DataFrame
-    # This is a placeholder. You should implement actual analysis here.
-    analysis = "Based on the CSV data provided, here are some initial insights:\n"
-    analysis += f"1. The dataset contains {len(df)} records and {len(df.columns)} columns.\n"
-    analysis += f"2. The average selling price is ${df['selling_price'].mean():.2f}.\n"
-    analysis += "3. Further analysis is needed to provide specific recommendations."
-    return analysis
-
-def lead_conversation():
-    if "user_data" not in st.session_state:
-        st.session_state.user_data = {}
-
-    if "conversation_step" not in st.session_state:
-        st.session_state.conversation_step = 0
-
-    bot_messages = [
-        "Hello! How are you today?",
-        "What is the name of your company?",
-        "Could you please provide a brief about your business model?",
-        "Please upload a CSV file containing the product IDs, names, cost price, selling price, competitor price if available, and history of sales if possible.",
-        "What is your desired gross margin?",
-        "Thank you! Let's proceed with the analysis."
-    ]
-
-    if st.session_state.conversation_step < len(bot_messages):
-        if len(st.session_state.chat_history) == 0 or st.session_state.chat_history[-1]["sender"] != "bot":
-            st.session_state.chat_history.append({"sender": "bot", "content": bot_messages[st.session_state.conversation_step]})
-        
-        display_chat()
-
-        if st.session_state.conversation_step == 3:
-            uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
-            if uploaded_file:
-                df = pd.read_csv(uploaded_file)
-                st.write("CSV file contents:")
-                st.write(df)
-                st.session_state.user_data['csv_data'] = df
-                analysis_result = analyze_csv_data(df)
-                st.session_state.chat_history.append({"sender": "bot", "content": analysis_result})
-                st.session_state.conversation_step += 1
-                st.experimental_rerun()
-        else:
-            user_input = st.text_input("Type your message here...", key=f"user_input_{st.session_state.conversation_step}")
-            if user_input:
-                handle_conversation(user_input)
-                st.session_state.user_data[f'step_{st.session_state.conversation_step}'] = user_input
-                st.session_state.conversation_step += 1
-                st.experimental_rerun()
-    else:
-        display_chat()
-        user_input = st.text_input("Type your message here...", key="user_input")
-        if user_input:
-            handle_conversation(user_input)
-            st.experimental_rerun()
 
 def main():
     st.title("Pulsar Apps Assistant")
@@ -237,14 +179,14 @@ def main():
         st.session_state.chat_history = []
 
     if st.session_state.signed_in:
-        if "conversation_step" not in st.session_state or st.session_state.conversation_step < 6:
-            lead_conversation()
-        else:
-            display_chat()
-            user_input = st.text_input("Type your message here...", key="user_input")
-            if user_input:
-                handle_conversation(user_input)
-                st.experimental_rerun()
+        if not st.session_state.chat_history:
+            st.session_state.chat_history.append({"sender": "bot", "content": "How can I help you today?"})
+        
+        display_chat()
+        user_input = st.text_input("Type your message here...", key="user_input")
+        if user_input:
+            handle_conversation(user_input)
+            st.experimental_rerun()
     else:
         col1, col2 = st.columns(2)
         with col1:
