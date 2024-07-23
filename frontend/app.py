@@ -57,11 +57,19 @@ def load_model():
         st.error(f"Model file not found at {model_path}")
         return None
     try:
-        model = AutoModelForCausalLM.from_pretrained(model_path, model_type="mistral", gpu_layers=1)  # Enable GPU acceleration if available
-        return model
+        # Try to load the model with GPU acceleration
+        model = AutoModelForCausalLM.from_pretrained(model_path, model_type="mistral", gpu_layers=1)
+        st.success("Model loaded with GPU acceleration.")
     except Exception as e:
-        st.error(f"Error loading model: {str(e)}")
-        return None
+        st.warning(f"Failed to load model with GPU acceleration: {str(e)}. Falling back to CPU.")
+        try:
+            # Fall back to CPU-only
+            model = AutoModelForCausalLM.from_pretrained(model_path, model_type="mistral")
+            st.success("Model loaded successfully on CPU.")
+        except Exception as e:
+            st.error(f"Error loading model: {str(e)}")
+            return None
+    return model
 
 model = load_model()
 
@@ -120,7 +128,8 @@ def generate_consultant_response(context):
         return "I apologize, but I'm having trouble accessing my knowledge. Please try again later."
     prompt = CONSULTANT_PROMPT.format(context=context)
     try:
-        response = model(prompt, max_new_tokens=500, temperature=0.7, top_p=0.95)
+        with st.spinner("Generating response..."):
+            response = model(prompt, max_new_tokens=500, temperature=0.7, top_p=0.95)
         return response
     except Exception as e:
         st.error(f"Error generating response: {str(e)}")
