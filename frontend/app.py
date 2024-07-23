@@ -57,18 +57,12 @@ def load_model():
         st.error(f"Model file not found at {model_path}")
         return None
     try:
-        # Try to load the model with GPU acceleration
-        model = AutoModelForCausalLM.from_pretrained(model_path, model_type="mistral", gpu_layers=1)
-        st.success("Model loaded with GPU acceleration.")
+        # Load the model for CPU operation
+        model = AutoModelForCausalLM.from_pretrained(model_path, model_type="mistral", gpu_layers=0)
+        st.success("Model loaded successfully on CPU.")
     except Exception as e:
-        st.warning(f"Failed to load model with GPU acceleration: {str(e)}. Falling back to CPU.")
-        try:
-            # Fall back to CPU-only
-            model = AutoModelForCausalLM.from_pretrained(model_path, model_type="mistral")
-            st.success("Model loaded successfully on CPU.")
-        except Exception as e:
-            st.error(f"Error loading model: {str(e)}")
-            return None
+        st.error(f"Error loading model: {str(e)}")
+        return None
     return model
 
 model = load_model()
@@ -244,7 +238,8 @@ def main():
         
         user_input = st.text_input("Type your message here...", key="user_input")
         if user_input:
-            handle_conversation(user_input)
+            with st.spinner("Processing your request..."):
+                handle_conversation(user_input)
             st.experimental_rerun()
     else:
         col1, col2 = st.columns(2)
