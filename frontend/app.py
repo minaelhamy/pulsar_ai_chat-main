@@ -3,11 +3,13 @@ import streamlit as st
 import boto3
 import sqlite3
 import pandas as pd
+import PyPDF2
 from ctransformers import AutoModelForCausalLM
 import ctransformers  
 from utils import get_timestamp, load_config, get_avatar
 from database_operations import load_last_k_text_messages, save_text_message, load_messages, get_all_chat_history_ids, delete_chat_history
 from html_templates import css
+
 
 config = load_config()
 
@@ -51,13 +53,11 @@ for local_model, s3_key in models.items():
 @st.cache_resource
 def load_model():
     model_path = os.path.join(local_model_path, "mistral-7b-instruct-v0.1.Q5_K_M.gguf")
-    st.write(f"Attempting to load model from: {os.path.abspath(model_path)}")
-
     if not os.path.exists(model_path):
         st.error(f"Model file not found at {model_path}")
         return None
     try:
-        model = AutoModelForCausalLM.from_pretrained(model_path, model_type="mistral")
+        model = AutoModelForCausalLM.from_pretrained(model_path, model_type="mistral", gpu_layers=1)  # Enable GPU acceleration if available
         return model
     except Exception as e:
         st.error(f"Error loading model: {str(e)}")
@@ -80,6 +80,40 @@ Remember to:
 
 Your response:
 """
+
+@st.cache_data
+def analyze_csv(df):
+    analysis = "Based on the CSV data provided, here are some initial insights:\n"
+    analysis += f"1. The dataset contains {len(df)} records and {len(df.columns)} columns.\n"
+    analysis += f"2. Columns present: {', '.join(df.columns)}\n"
+    analysis += f"3. Sample data:\n{df.head().to_string()}\n"
+    analysis += "4. Further analysis and recommendations would require more context about your specific business needs."
+    return analysis
+
+@st.cache_data
+def analyze_pdf(pdf_content):
+    analysis = "Based on the PDF content provided, here are some initial insights:\n"
+    analysis += f"1. The PDF contains {len(pdf_content.split())} words.\n"
+    analysis += f"2. Key topics might include: [List some key topics or frequent words]\n"
+    analysis += "3. For a more detailed analysis and recommendations, please provide specific questions or areas of interest related to this document."
+    return analysis
+
+def handle_file_upload():
+    uploaded_file = st.file_uploader("Upload a CSV or PDF file", type=["csv", "pdf"])
+    if uploaded_file is not None:
+        file_extension = uploaded_file.name.split(".")[-1].lower()
+        if file_extension == "csv":
+            df = pd.read_csv(uploaded_file)
+            analysis = analyze_csv(df)
+        elif file_extension == "pdf":
+            pdf_reader = PyPDF2.PdfReader(uploaded_file)
+            pdf_content = ""
+            for page in pdf_reader.pages:
+                pdf_content += page.extract_text()
+            analysis = analyze_pdf(pdf_content)
+        
+        st.session_state.chat_history.append({"sender": "bot", "content": analysis})
+        display_chat()
 
 def generate_consultant_response(context):
     if model is None:
@@ -150,15 +184,27 @@ def display_chat():
             st.markdown(f"<div class='chat-message bot'><img src='{bot_avatar}' alt='bot' class='avatar' style='width:30px; height:30px; margin-right:10px;'/> {message['content']}</div>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
+@st.cache_data
+def generate_consultant_response(context):
+    if model is None:
+        return "I apologize, but I'm having trouble accessing my knowledge. Please try again later."
+    prompt = CONSULTANT_PROMPT.format(context=context)
+    try:
+        response = model(prompt, max_new_tokens=500, temperature=0.7, top_p=0.95)
+        return response
+    except Exception as e:
+        st.error(f"Error generating response: {str(e)}")
+        return "I'm sorry, but I encountered an error while processing your request. Please try again."
+
+
 def handle_conversation(user_input):
     st.session_state.chat_history.append({"sender": "user", "content": user_input})
-    display_chat()
     
     context = "\n".join([f"{msg['sender']}: {msg['content']}" for msg in st.session_state.chat_history[-5:]])
     response = generate_consultant_response(context + f"\nUser: {user_input}\nAI:")
     
     st.session_state.chat_history.append({"sender": "bot", "content": response})
-    display_chat()
+
 
 def main():
     st.title("Pulsar Apps Assistant")
@@ -183,6 +229,10 @@ def main():
             st.session_state.chat_history.append({"sender": "bot", "content": "How can I help you today?"})
         
         display_chat()
+        
+        # File upload option
+        handle_file_upload()
+        
         user_input = st.text_input("Type your message here...", key="user_input")
         if user_input:
             handle_conversation(user_input)
